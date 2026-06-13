@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ── PWA META TAGS ── -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TX DL Quiz">
+  <meta name="theme-color" content="#002868">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Texas DL Test — Most Missed Questions</title>
+<style>
+  :root {
+    --tx-red: #BF0A30;
+    --tx-blue: #002868;
+    --tx-gold: #F5A623;
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --text: #1A1A2E;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --correct: #10B981;
+    --wrong: #EF4444;
+    --correct-bg: #ECFDF5;
+    --wrong-bg: #FEF2F2;
+    --miss-high: #FEE2E2;
+    --miss-high-text: #B91C1C;
+    --miss-med: #FEF3C7;
+    --miss-med-text: #92400E;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, var(--tx-blue) 0%, #001A4D 100%);
+    color: white;
+    padding: 24px 20px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '★';
+    position: absolute;
+    font-size: 120px;
+    opacity: 0.04;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .header-badge {
+    display: inline-block;
+    background: var(--tx-red);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  header p {
+    font-size: 14px;
+    opacity: 0.75;
+    margin-bottom: 18px;
+  }
+  .source-note {
+    font-size: 11px;
+    opacity: 0.5;
+    margin-top: 6px;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-container {
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    height: 8px;
+    margin: 0 20px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--tx-gold), #FF6B35);
+    border-radius: 8px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 20px 0;
+    font-size: 12px;
+    opacity: 0.65;
+  }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  /* ── SCOREBOARD ── */
+  .scoreboard {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .score-chip {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .score-chip .val {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .score-chip .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 3px;
+  }
+  .score-chip.correct .val { color: var(--correct); }
+  .score-chip.wrong .val { color: var(--wrong); }
+  .score-chip.total .val { color: var(--tx-blue); }
+
+  /* ── QUESTION CARD ── */
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .q-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .miss-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+  .miss-high { background: var(--miss-high); color: var(--miss-high-text); }
+  .miss-med  { background: var(--miss-med);  color: var(--miss-med-text);  }
+  .category-tag {
+    font-size: 11px;
+    color: var(--tx-blue);
+    background: #EEF2FF;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .question-text {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  /* ── CHOICES ── */
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+
+  .choice-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #F9FAFB;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--text);
+    transition: all 0.15s ease;
+    width: 100%;
+  }
+  .choice-btn:hover:not(:disabled) {
+    border-color: var(--tx-blue);
+    background: #EEF2FF;
+  }
+  .choice-btn .letter {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.15s;
+  }
+  .choice-btn.correct-choice {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+  .choice-btn.correct-choice .letter {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: white;
+  }
+  .choice-btn.wrong-choice {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+  }
+  .choice-btn.wrong-choice .letter {
+    background: var(--wrong);
+    border-color: var(--wrong);
+    color: white;
+  }
+  .choice-btn:disabled { cursor: default; }
+
+  /* ── EXPLANATION ── */
+  .explanation {
+    display: none;
+    margin-top: 16px;
+    background: #F0F7FF;
+    border-left: 4px solid var(--tx-blue);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1E3A6E;
+  }
+  .explanation .exp-label {
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 5px;
+    color: var(--tx-blue);
+  }
+  .explanation.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ── NEXT BUTTON ── */
+  .next-btn {
+    display: none;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--tx-blue);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .next-btn:hover { background: #001A4D; }
+  .next-btn.show { display: block; }
+
+  /* ── RESULTS ── */
+  .results-screen {
+    display: none;
+    animation: slideIn 0.4s ease;
+  }
+  .results-screen.show { display: block; }
+
+  .results-hero {
+    background: linear-gradient(135deg, var(--tx-blue), #001A4D);
+    color: white;
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .results-hero .star { font-size: 48px; margin-bottom: 8px; }
+  .results-hero .big-score {
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .results-hero .score-label { font-size: 16px; opacity: 0.8; margin-bottom: 16px; }
+  .results-hero .pass-fail {
+    display: inline-block;
+    padding: 8px 24px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .pass-fail.pass { background: var(--correct); }
+  .pass-fail.fail { background: var(--tx-red); }
+
+  .category-breakdown {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .category-breakdown h3 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .cat-row {
+    margin-bottom: 14px;
+  }
+  .cat-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .cat-name { font-size: 13px; font-weight: 600; }
+  .cat-score { font-size: 13px; font-weight: 700; color: var(--tx-blue); }
+  .cat-bar-bg {
+    height: 8px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .cat-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--tx-blue), #4F6BED);
+    transition: width 0.8s ease;
+  }
+  .cat-bar-fill.low { background: linear-gradient(90deg, var(--wrong), #F87171); }
+  .cat-bar-fill.high { background: linear-gradient(90deg, var(--correct), #34D399); }
+
+  .restart-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--tx-red);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .restart-btn:hover { background: #9B0827; }
+
+  .tip-card {
+    background: var(--miss-med);
+    border: 1px solid #FCD34D;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--miss-med-text);
+    line-height: 1.5;
+  }
+  .tip-card strong { display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  /* ── QUESTION AREA WRAPPER ── */
+  #quiz-area {}
+
+  /* ── INSTALL BANNER ── */
+  #install-banner {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--tx-blue);
+    color: white;
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    z-index: 999;
+    max-width: 360px;
+    width: calc(100% - 32px);
+    animation: slideUp 0.4s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  #install-banner.show { display: flex; align-items: center; gap: 12px; }
+  #install-banner .ib-icon { font-size: 28px; flex-shrink: 0; }
+  #install-banner .ib-text { flex: 1; }
+  #install-banner .ib-title { font-weight: 700; font-size: 14px; }
+  #install-banner .ib-sub { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+  #install-banner .ib-btn {
+    background: var(--tx-gold);
+    color: #002868;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  #install-banner .ib-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 0 0 6px;
+    flex-shrink: 0;
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">⚠ Most Missed Questions</div>
+  <h1>Texas DL Knowledge Test</h1>
+  <p>75 questions: 25 most-missed + 50 harder Texas-specific — data from 6-month test analytics</p>
+  <div class="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+  <div class="progress-label">
+    <span id="progress-text">Question 1 of 25</span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="source-note">Sources: iDriveSafely, DriversEd.com, driving-tests.org · TX Handbook DL-7 (Jan 2026)</div>
+</header>
+
+<main>
+  <div class="scoreboard">
+    <div class="score-chip correct">
+      <div class="val" id="score-correct">0</div>
+      <div class="lbl">Correct</div>
+    </div>
+    <div class="score-chip wrong">
+      <div class="val" id="score-wrong">0</div>
+      <div class="lbl">Missed</div>
+    </div>
+    <div class="score-chip total">
+      <div class="val" id="score-pct">0%</div>
+      <div class="lbl">Score</div>
+    </div>
+  </div>
+
+  <div id="quiz-area">
+    <div class="question-card" id="question-card">
+      <div class="q-meta">
+        <span class="q-num" id="q-num">Question 1</span>
+        <span class="miss-badge" id="miss-badge"></span>
+        <span class="category-tag" id="cat-tag"></span>
+      </div>
+      <div class="question-text" id="question-text"></div>
+      <div class="choices" id="choices"></div>
+      <div class="explanation" id="explanation">
+        <div class="exp-label">📖 Why this answer?</div>
+        <span id="exp-text"></span>
+      </div>
+      <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question →</button>
+    </div>
+  </div>
+
+  <div class="results-screen" id="results-screen">
+    <div class="results-hero">
+      <div class="star" id="result-emoji">🎯</div>
+      <div class="big-score" id="final-score">0%</div>
+      <div class="score-label" id="final-label">out of 25 questions</div>
+      <div class="pass-fail" id="pass-fail-badge">—</div>
+    </div>
+
+    <div class="tip-card">
+      <strong>💡 Texas DPS Fast Facts</strong>
+      30 questions · 70% to pass (21 correct) · Up to 3 attempts in 90 days · Based on TX Driver Handbook DL-7
+    </div>
+
+    <div class="category-breakdown" id="cat-breakdown">
+      <h3>Score by Category</h3>
+      <div id="cat-rows"></div>
+    </div>
+
+    <button class="restart-btn" onclick="restartQuiz()">🔄 Retake the Quiz</button>
+  </div>
+</main>
+
+<script>
+const QUESTIONS = [
+  // ── HILL PARKING (most frequently missed) ──────────────────────
+  {
+    category: "Hill Parking",
+    miss: "HIGH",
+    q: "You want to park uphill on a two-way road with NO curb. Which way do you turn your front wheels?",
+    choices: [
+      "So they face straight ahead",
+      "Right — toward the side of the road",
+      "Left — toward the center of the road"
+    ],
+    correct: 1,
+    explain: "With no curb, always turn wheels toward the edge of the road (right when facing uphill, left when facing downhill). If the car rolls, the tires will catch on the shoulder and stop it. With a curb, the rule flips: facing uphill, turn away from the curb."
+  },
+  {
+    category: "Hill Parking",
+    miss: "HIGH",
+    q: "Which way should your front wheels be turned when parked uphill next to a curb?",
+    choices: [
+      "Toward the curb",
+      "Away from the curb",
+      "Parallel to the curb"
+    ],
+    correct: 1,
+    explain: "Uphill WITH a curb: wheels away from curb. If the car rolls backward, the curb stops it. Remember the logic: you want the car to roll INTO the curb, not away from it. Downhill with a curb: wheels toward the curb."
+  },
+  // ── RIGHT-OF-WAY ───────────────────────────────────────────────
+  {
+    category: "Right-of-Way",
+    miss: "HIGH",
+    q: "You reach a four-way stop at the same time as the driver on your left. Who has the right-of-way?",
+    choices: [
+      "The driver on your left",
+      "You have the right-of-way",
+      "Whoever is signaling to turn"
+    ],
+    correct: 1,
+    explain: "When two vehicles arrive simultaneously, yield to the car on your RIGHT. The driver on your left should yield to you. Memory trick: 'Right is Right.' This is the #1 most missed right-of-way scenario on the TX test."
+  },
+  {
+    category: "Right-of-Way",
+    miss: "HIGH",
+    q: "The traffic light turns green, but there are still other vehicles in the intersection. You should:",
+    choices: [
+      "Enter and wait for traffic to clear",
+      "Move ahead only if you can go around other vehicles",
+      "Wait until the intersection clears before entering"
+    ],
+    correct: 2,
+    explain: "Never enter an intersection until you can safely cross it completely. Entering on green when the intersection is blocked creates gridlock and is illegal. Wait until the path is fully clear."
+  },
+  {
+    category: "Right-of-Way",
+    miss: "MED",
+    q: "A pedestrian is in a crosswalk in the middle of a block. What is true about right-of-way?",
+    choices: [
+      "The pedestrian must yield to you",
+      "The pedestrian has the right-of-way",
+      "Vehicles have right-of-way but must take care for safety"
+    ],
+    correct: 1,
+    explain: "Pedestrians in any crosswalk — marked or unmarked — always have the right-of-way. A 'crosswalk' exists at every intersection, even without painted lines."
+  },
+  // ── BAC & ALCOHOL ──────────────────────────────────────────────
+  {
+    category: "Alcohol Laws",
+    miss: "HIGH",
+    q: "It is illegal for a person 21 or older to drive with a BAC of ________ or higher.",
+    choices: [
+      "0.10%",
+      "0.05%",
+      "0.08%"
+    ],
+    correct: 2,
+    explain: "The legal limit in Texas (and all 50 states) for adults 21+ is 0.08%. Under 21: near-zero (Texas uses 0.00% — ANY detectable alcohol = DUI). Commercial drivers: 0.04%. Always memorize all three tiers — the test loves the exceptions."
+  },
+  {
+    category: "Alcohol Laws",
+    miss: "MED",
+    q: "What does Texas Implied Consent law mean?",
+    choices: [
+      "You must inform police if you've been drinking",
+      "By driving in Texas, you agree to chemical testing if suspected of DUI",
+      "You must consent to a search of your vehicle"
+    ],
+    correct: 1,
+    explain: "Texas Implied Consent: every Texas driver has already agreed (by driving) to take a blood, breath, or urine test if an officer suspects DUI. Refusing has automatic consequences: 180-day license suspension on the first refusal."
+  },
+  // ── LANE MARKINGS ─────────────────────────────────────────────
+  {
+    category: "Lane Markings",
+    miss: "HIGH",
+    q: "There are TWO solid yellow lines in the center of the roadway. You:",
+    choices: [
+      "May cross to turn left into a private driveway",
+      "Should treat them as a solid wall — no crossing for any reason",
+      "Are on a one-way street"
+    ],
+    correct: 1,
+    explain: "Double solid yellow = no passing and no crossing in either direction. This is different from a single solid yellow (no passing, but you may cross to turn left). Double solid means absolute barrier."
+  },
+  {
+    category: "Lane Markings",
+    miss: "HIGH",
+    q: "A solid and broken yellow line appear together. If the BROKEN line is on your side, you:",
+    choices: [
+      "May not pass under any circumstances",
+      "May pass only at night",
+      "May pass if it is safe to do so"
+    ],
+    correct: 2,
+    explain: "Broken line on your side = you may pass when safe. Solid line on your side = no passing. Memory trick: 'Solid is a Wall, Broken is a Door.' Each driver follows the rule for the line closest to their lane."
+  },
+  // ── FOLLOWING DISTANCE ─────────────────────────────────────────
+  {
+    category: "Following Distance",
+    miss: "HIGH",
+    q: "Following closely behind another vehicle (tailgating):",
+    choices: [
+      "Helps keep traffic flowing smoothly",
+      "Is a common cause of rear-end collisions",
+      "Increases fuel efficiency"
+    ],
+    correct: 1,
+    explain: "Tailgating is one of the leading causes of rear-end collisions. Texas law requires a 'reasonable and prudent' following distance. The 3-second rule: count 'one-one-thousand, two-one-thousand, three-one-thousand' as the car ahead passes a fixed object — stay at least 3 seconds behind."
+  },
+  {
+    category: "Following Distance",
+    miss: "MED",
+    q: "Tailgating other drivers (too close to their rear bumper):",
+    choices: [
+      "Reduces collisions by preventing being 'cut off'",
+      "Can frustrate other drivers and make them angry",
+      "Cannot result in a traffic citation"
+    ],
+    correct: 1,
+    explain: "Tailgating can cause road rage AND is a traffic violation. Following too closely can result in a citation. It is never a protective strategy — it dramatically increases your stopping distance risk."
+  },
+  // ── HEADLIGHTS / NIGHT DRIVING ─────────────────────────────────
+  {
+    category: "Headlights",
+    miss: "HIGH",
+    q: "You should dim your lights for oncoming vehicles OR when within 300 feet of a vehicle:",
+    choices: [
+      "You are approaching from behind",
+      "Approaching you from behind",
+      "You have already passed"
+    ],
+    correct: 0,
+    explain: "Dim to low beams within 500 feet of oncoming vehicles AND within 300 feet of a vehicle you're following (approaching from behind). People mix up the direction — this asks about a car you're catching up to, not one coming at you."
+  },
+  {
+    category: "Headlights",
+    miss: "MED",
+    q: "At night, an oncoming driver fails to dim their high beams. You should look:",
+    choices: [
+      "Toward the center of the roadway",
+      "Straight ahead in your lane",
+      "Toward the RIGHT edge of your lane"
+    ],
+    correct: 2,
+    explain: "Looking toward the right edge of your lane lets you track your lane position while avoiding the glare. Never stare at the oncoming headlights or look to the left — both increase glare disorientation."
+  },
+  // ── EMERGENCY VEHICLES ─────────────────────────────────────────
+  {
+    category: "Emergency Vehicles",
+    miss: "HIGH",
+    q: "You must yield to an emergency vehicle with lights/sirens by:",
+    choices: [
+      "Stopping immediately, even in an intersection",
+      "Moving to the right lane and driving slowly",
+      "Driving as near to the right edge as possible and stopping"
+    ],
+    correct: 2,
+    explain: "Pull RIGHT and STOP. Never stop in an intersection — clear it first, then pull right and stop. Staying in the right lane while moving is not sufficient. Texas Move Over Law also requires you to move over or slow down for stopped emergency vehicles on the roadside."
+  },
+  // ── ROAD SIGNS ─────────────────────────────────────────────────
+  {
+    category: "Road Signs",
+    miss: "HIGH",
+    q: "A flashing RED traffic light at an intersection means:",
+    choices: [
+      "Slow down before entering",
+      "Stop and wait for the green light",
+      "Stop before entering — treat as a STOP sign"
+    ],
+    correct: 2,
+    explain: "Flashing RED = treat as a stop sign. Come to a complete stop, yield to traffic and pedestrians, then proceed when safe. Flashing YELLOW = slow down and proceed with caution. People often confuse these two."
+  },
+  {
+    category: "Road Signs",
+    miss: "MED",
+    q: "A red and white YIELD sign means:",
+    choices: [
+      "Stop completely before entering",
+      "Give the right-of-way to other drivers",
+      "Other drivers must yield to you"
+    ],
+    correct: 1,
+    explain: "A yield sign means slow down, look, and give right-of-way to crossing traffic or pedestrians. It does NOT require a complete stop unless traffic requires it. Confusing Yield with Stop is a very common test error."
+  },
+  {
+    category: "Road Signs",
+    miss: "MED",
+    q: "A red and white WRONG WAY sign means:",
+    choices: [
+      "The road ahead is closed to traffic in all directions",
+      "The road ahead is closed to traffic in YOUR direction",
+      "Do not enter unless it is safe to do so"
+    ],
+    correct: 1,
+    explain: "Wrong Way means you are traveling against the flow of traffic for that roadway — it's closed to your direction. This typically appears on exit ramps and one-way roads. DO NOT ENTER sign means no entry at all (one-way street entrance)."
+  },
+  // ── SCHOOL BUS ─────────────────────────────────────────────────
+  {
+    category: "School Bus",
+    miss: "HIGH",
+    q: "A school bus ahead activates its flashing red lights and extends its stop arm. You must:",
+    choices: [
+      "Stop only if you are behind the bus",
+      "Slow down to 10 mph and pass with caution",
+      "Stop — ALL traffic in both directions must stop"
+    ],
+    correct: 2,
+    explain: "In Texas, ALL vehicles in BOTH directions must stop when a school bus flashes red and extends the stop arm — unless the road is divided by a physical median barrier. A painted line or center turn lane is NOT a median. Failure to stop: up to $1,250 fine."
+  },
+  // ── WEATHER / SKIDS ───────────────────────────────────────────
+  {
+    category: "Weather & Skids",
+    miss: "HIGH",
+    q: "The roadway is wet and your car starts to skid. You should:",
+    choices: [
+      "Pump the brakes quickly and firmly",
+      "Shift to a lower gear",
+      "Slowly ease your foot off the gas pedal"
+    ],
+    correct: 2,
+    explain: "In a skid, ease off the gas and steer in the direction you want to go (into the skid). Do NOT brake hard — it worsens loss of traction. If you have ABS, apply firm steady brake pressure; if not, pump gently. Shifting gears is not the right first action."
+  },
+  {
+    category: "Weather & Skids",
+    miss: "MED",
+    q: "Which is TRUE about bridge and overpass roadways in cold, wet weather?",
+    choices: [
+      "They tend to freeze AFTER the rest of the road",
+      "They do not freeze because they are made of concrete",
+      "They tend to freeze BEFORE the rest of the road"
+    ],
+    correct: 2,
+    explain: "Bridges and overpasses freeze first because cold air circulates underneath them as well as above, cooling the surface from both sides. Regular roads have ground insulation beneath. Always slow down on bridges first in cold weather."
+  },
+  // ── PASSING ────────────────────────────────────────────────────
+  {
+    category: "Passing",
+    miss: "MED",
+    q: "When passing another vehicle, it is safe to return to your lane if you:",
+    choices: [
+      "Have passed the other vehicle's front bumper",
+      "Cannot see the vehicle directly to your right",
+      "See the passed vehicle's headlights in your REAR-VIEW mirror"
+    ],
+    correct: 2,
+    explain: "You can merge back when you can see the passed vehicle's headlights in your rearview mirror. Passing the front bumper is too early — you need a full car-length of clearance. The headlights-in-mirror rule gives you that safe buffer."
+  },
+  // ── MOTORCYCLES & BLIND SPOTS ──────────────────────────────────
+  {
+    category: "Motorcycles & Trucks",
+    miss: "MED",
+    q: "Always look carefully for motorcycles before changing lanes because:",
+    choices: [
+      "They usually have the right-of-way at intersections",
+      "Their smaller size makes them harder to see",
+      "It is illegal for motorcycles to share traffic lanes"
+    ],
+    correct: 1,
+    explain: "Motorcycles are smaller and often fall in vehicle blind spots, making them easy to miss. Motorcyclists have the same rights and responsibilities as other drivers — they don't have special right-of-way, and lane splitting is illegal in Texas."
+  },
+  {
+    category: "Motorcycles & Trucks",
+    miss: "MED",
+    q: "You are in a large truck's blind spot if you:",
+    choices: [
+      "Follow no closer than 10 feet behind the large truck",
+      "Drive close to the large truck's left front wheel",
+      "Cannot see the truck driver in the truck's SIDE mirrors"
+    ],
+    correct: 2,
+    explain: "If you can't see the driver in the mirror, the driver can't see you. Large trucks have four major blind spots: directly behind, directly in front, the right side (largest), and the left side. The right-side blind spot extends three lanes wide."
+  },
+  // ── CELL PHONES ───────────────────────────────────────────────
+  {
+    category: "Distractions",
+    miss: "MED",
+    q: "Your cell phone rings while driving and you don't have a hands-free device. You should:",
+    choices: [
+      "Answer — it may be an emergency",
+      "Check the number before deciding",
+      "Let the call go to voicemail"
+    ],
+    correct: 2,
+    explain: "Texas law prohibits handheld device use while driving in school zones and for novice drivers. Best practice at all times: let it go to voicemail. Checking the number is still a distraction. No call is worth a crash."
+  },
+  // ── INTERSECTION SCANNING ──────────────────────────────────────
+  {
+    category: "Intersection Safety",
+    miss: "MED",
+    q: "Before driving into an intersection from a stop, you should look:",
+    choices: [
+      "Left and right only",
+      "Straight ahead and to the left",
+      "Left, right, and LEFT AGAIN"
+    ],
+    correct: 2,
+    explain: "Left-Right-Left. You look left first because that's where oncoming traffic hits your driver's side first. Look right for cross traffic, then left again to confirm it's still clear before entering. The second left look catches late-running vehicles."
+  },
+  // ── SEATBELTS ─────────────────────────────────────────────────
+  {
+    category: "Safety Equipment",
+    miss: "MED",
+    q: "You are in a vehicle with a LAP belt AND a separate SHOULDER belt. You are required to:",
+    choices: [
+      "Use only the shoulder belt",
+      "Use BOTH the lap and shoulder belts",
+      "Use only the lap belt"
+    ],
+    correct: 1,
+    explain: "Texas law requires using ALL available restraints. If both are present, both must be worn. Shoulder belt alone: risk of sliding under in a crash. Lap belt alone: risk of upper body whiplash. Both together provide the intended protection."
+  },
+
+  // ══════════════════════════════════════════════════
+  //  HARDER QUESTIONS — SET 2 (Texas-specific depth)
+  // ══════════════════════════════════════════════════
+
+  // SPEED LIMITS ─────────────────────────────────────
+  {
+    category: "Speed Limits",
+    miss: "HIGH",
+    q: "What is the maximum speed in a Texas school zone when children are present?",
+    choices: ["15 mph", "25 mph", "20 mph"],
+    correct: 2,
+    explain: "School zones in Texas are 20 mph when children are present (typically indicated by flashing yellow lights). Violations carry double fines. Outside school hours, the regular posted limit applies."
+  },
+  {
+    category: "Speed Limits",
+    miss: "HIGH",
+    q: "On a numbered Texas highway outside an urban area, the DEFAULT daytime speed limit (when no signs are posted) is:",
+    choices: ["65 mph", "70 mph", "55 mph"],
+    correct: 1,
+    explain: "Texas's default on numbered rural highways is 70 mph during the day and 65 mph at night. Always obey posted signs — some Texas toll roads are posted at 85 mph (SH 130), the highest in the U.S."
+  },
+  {
+    category: "Speed Limits",
+    miss: "MED",
+    q: "The default speed limit on an urban district street with no posted signs is:",
+    choices: ["25 mph", "30 mph", "35 mph"],
+    correct: 1,
+    explain: "Texas's default urban speed limit is 30 mph. This applies to city streets without posted limits. Residential streets often have lower limits. School zones are 20 mph when children are present."
+  },
+  {
+    category: "Speed Limits",
+    miss: "HIGH",
+    q: "Texas's 'Basic Speed Law' means you must:",
+    choices: [
+      "Always match the posted speed limit exactly",
+      "Never drive faster than is safe for current conditions, even if below the posted limit",
+      "Keep up with traffic flow regardless of posted limits"
+    ],
+    correct: 1,
+    explain: "Texas's basic speed law requires a speed that is 'reasonable and prudent' for conditions. You can be cited for driving too fast for conditions — rain, fog, heavy traffic — even if you're at or below the posted limit."
+  },
+  {
+    category: "Speed Limits",
+    miss: "MED",
+    q: "Driving significantly below the speed limit when conditions don't require it is:",
+    choices: [
+      "Always safe — you can never get a citation for going too slow",
+      "Illegal if it impedes the normal flow of traffic",
+      "Encouraged for fuel efficiency"
+    ],
+    correct: 1,
+    explain: "Texas prohibits driving so slowly that you impede normal traffic flow. You can be cited for this, just like speeding. The left lane of a multi-lane highway is for passing — if you're not passing, move right."
+  },
+
+  // MOVE OVER LAW ────────────────────────────────────
+  {
+    category: "Move Over Law",
+    miss: "HIGH",
+    q: "Texas's Move Over Law: when approaching a stopped emergency vehicle with flashing lights on a multi-lane road, you must:",
+    choices: [
+      "Stop completely until the vehicle moves",
+      "Move over one lane away OR slow to 20 mph below the speed limit if you can't move over",
+      "Slow to 15 mph and pass carefully in the same lane"
+    ],
+    correct: 1,
+    explain: "Texas Move Over Law: if you can safely change lanes, move over one lane away. If you can't, slow down to 20 mph below the posted limit (or 5 mph if the limit is 25 mph or less). Applies to police, fire, EMS, tow trucks, and TxDOT vehicles."
+  },
+
+  // TURN SIGNALS ─────────────────────────────────────
+  {
+    category: "Turn Signals",
+    miss: "HIGH",
+    q: "When turning in a city or town in Texas, you must signal at least ________ before the turn.",
+    choices: ["50 feet", "100 feet", "200 feet"],
+    correct: 1,
+    explain: "Texas requires signaling at least 100 feet before turning in a city or town. On open highways, signal 'in time sufficient to warn other traffic.' Always signal before turns, lane changes, and pulling from the curb."
+  },
+  {
+    category: "Turn Signals",
+    miss: "HIGH",
+    q: "When is it legal to make a LEFT turn on a red light in Texas?",
+    choices: [
+      "Never — red means stop",
+      "From a one-way street turning onto another one-way street, after stopping and yielding",
+      "After stopping, from any street, if no traffic is approaching"
+    ],
+    correct: 1,
+    explain: "Texas allows a left turn on red ONLY from a one-way street onto another one-way street, after a complete stop and yielding to traffic and pedestrians. A right turn on red is permitted from any street after stopping, unless a sign prohibits it."
+  },
+
+  // PARKING DISTANCES ────────────────────────────────
+  {
+    category: "Parking Rules",
+    miss: "HIGH",
+    q: "You must NOT park within ________ of a fire hydrant.",
+    choices: ["10 feet", "20 feet", "15 feet"],
+    correct: 2,
+    explain: "Texas requires staying at least 15 feet from a fire hydrant. Other key distances: 20 feet from a crosswalk at an intersection, 30 feet from a stop sign, yield sign, or traffic signal."
+  },
+  {
+    category: "Parking Rules",
+    miss: "HIGH",
+    q: "You must NOT park within ________ of a railroad crossing.",
+    choices: ["50 feet", "15 feet", "30 feet"],
+    correct: 0,
+    explain: "Never park within 50 feet of a railroad crossing. This keeps emergency vehicles clear and ensures train visibility. When stopping to wait at a crossing, stop 15–50 feet from the nearest rail."
+  },
+  {
+    category: "Parking Rules",
+    miss: "HIGH",
+    q: "You must NOT park within ________ of a stop sign, yield sign, or traffic signal.",
+    choices: ["20 feet", "30 feet", "50 feet"],
+    correct: 1,
+    explain: "Stay at least 30 feet from a stop sign, yield sign, or traffic control device. This keeps signs visible to drivers approaching the intersection."
+  },
+  {
+    category: "Parking Rules",
+    miss: "MED",
+    q: "When parallel parking, after pulling alongside the car in front of your space, you should FIRST turn your wheel:",
+    choices: [
+      "Left and back up slowly",
+      "Sharply to the right and back up slowly",
+      "Straight — pull directly into the space"
+    ],
+    correct: 1,
+    explain: "Standard parallel parking: align beside the front car, then turn wheel sharply RIGHT while backing until you're at about 45°, then turn LEFT to straighten. The initial right turn swings your rear toward the curb."
+  },
+
+  // RAILROAD CROSSINGS ───────────────────────────────
+  {
+    category: "Railroad Crossings",
+    miss: "HIGH",
+    q: "When a train is approaching, you must stop your vehicle:",
+    choices: [
+      "At the edge of the tracks",
+      "At least 15 feet but no more than 50 feet from the nearest rail",
+      "No more than 100 feet from the crossing"
+    ],
+    correct: 1,
+    explain: "Stop between 15 and 50 feet from the nearest rail. Too close (under 15 ft) puts you in the train's overhang zone; too far back reduces your visibility of the tracks."
+  },
+  {
+    category: "Railroad Crossings",
+    miss: "MED",
+    q: "You should NEVER shift gears while crossing railroad tracks because:",
+    choices: [
+      "It is specifically illegal in Texas",
+      "Your vehicle could stall on the tracks",
+      "It causes transmission damage"
+    ],
+    correct: 1,
+    explain: "Shifting gears on railroad tracks risks stalling mid-crossing. If you stall on the tracks, exit the vehicle immediately and move away at a 45° angle from the tracks. A train can take more than a mile to stop."
+  },
+
+  // HEADLIGHT REQUIREMENTS ───────────────────────────
+  {
+    category: "Headlights",
+    miss: "HIGH",
+    q: "Texas requires headlights whenever you cannot clearly see a person or vehicle at ________ ahead.",
+    choices: ["500 feet", "1,000 feet", "300 feet"],
+    correct: 1,
+    explain: "Turn on headlights when you cannot see 1,000 feet ahead — fog, rain, twilight, dust. Texas also requires headlights whenever your windshield wipers are on."
+  },
+  {
+    category: "Headlights",
+    miss: "HIGH",
+    q: "Texas requires headlights from:",
+    choices: [
+      "Sunset to sunrise only",
+      "30 minutes after sunset to 30 minutes before sunrise, AND any time visibility is under 1,000 feet",
+      "Any time you are on a highway"
+    ],
+    correct: 1,
+    explain: "Headlights are required from 30 minutes after sunset to 30 minutes before sunrise. They're also required whenever visibility drops below 1,000 feet — rain, fog, dust — and whenever windshield wipers are in use."
+  },
+
+  // FOLLOWING A FIRE TRUCK ───────────────────────────
+  {
+    category: "Emergency Vehicles",
+    miss: "HIGH",
+    q: "When following a fire truck responding to an emergency, you must stay at least ________ behind it.",
+    choices: ["200 feet", "300 feet", "500 feet"],
+    correct: 2,
+    explain: "Texas law requires staying at least 500 feet behind a responding fire truck. This keeps access roads clear and prevents you from obstructing firefighters at the scene."
+  },
+
+  // TEEN DRIVER RESTRICTIONS ─────────────────────────
+  {
+    category: "Teen Driver Laws",
+    miss: "HIGH",
+    q: "A Texas driver under 18 with a provisional license cannot drive between:",
+    choices: ["10 PM and 5 AM", "Midnight and 5 AM", "11 PM and 6 AM"],
+    correct: 1,
+    explain: "Texas provisional license (under 18) restricts driving between midnight and 5 AM, unless accompanied by a licensed adult 21+ in the front seat, or driving for work, school, or a medical emergency."
+  },
+  {
+    category: "Teen Driver Laws",
+    miss: "HIGH",
+    q: "For the first 6 months after getting a provisional license, a Texas driver under 18 may not carry more than ________ passenger(s) under 21 who are not family members.",
+    choices: ["Zero", "One", "Two"],
+    correct: 1,
+    explain: "For the first 6 months on a provisional license, Texas teens may carry no more than ONE non-family passenger under 21. Passengers are a leading distraction factor in teen crashes."
+  },
+  {
+    category: "Teen Driver Laws",
+    miss: "HIGH",
+    q: "Texas drivers under 18 are prohibited from using a cell phone while driving:",
+    choices: [
+      "Only for texting — voice calls are allowed",
+      "Unless stopped at a red light",
+      "Completely — including hands-free devices"
+    ],
+    correct: 2,
+    explain: "Texas bans ALL cell phone use by drivers under 18, including hands-free. Adult drivers are banned from handheld use in school zones and from texting statewide. Teen drivers face a total ban."
+  },
+
+  // TEXTING STATEWIDE ────────────────────────────────
+  {
+    category: "Distractions",
+    miss: "HIGH",
+    q: "Texas's statewide texting-while-driving ban applies to:",
+    choices: [
+      "Only drivers under 18",
+      "Only in school zones",
+      "All drivers — reading, writing, or sending any electronic message is illegal statewide"
+    ],
+    correct: 2,
+    explain: "Since 2017, Texas bans texting while driving for ALL drivers statewide. First offense: up to $99 fine. If the violation causes death or serious injury: up to $4,000 fine and/or 1 year in jail."
+  },
+
+  // DWI CONSEQUENCES ────────────────────────────────
+  {
+    category: "DWI & Consequences",
+    miss: "HIGH",
+    q: "A first DWI offense in Texas can result in a fine of up to:",
+    choices: ["$1,000", "$2,000", "$5,000"],
+    correct: 1,
+    explain: "First DWI offense: up to $2,000 fine, 3–180 days jail, license suspension up to 1 year. Additional surcharges of $1,000–$2,000/year for 3 years apply to keep your license."
+  },
+  {
+    category: "DWI & Consequences",
+    miss: "HIGH",
+    q: "In Texas, DWI with a passenger UNDER 15 in the vehicle is charged as:",
+    choices: [
+      "An enhanced misdemeanor with doubled fines",
+      "A state jail felony, regardless of BAC",
+      "A Class A misdemeanor"
+    ],
+    correct: 1,
+    explain: "DWI with a child passenger under 15 is a STATE JAIL FELONY in Texas — even for a first offense. Penalty: 6 months to 2 years in state jail, up to $10,000 fine. Far more serious than a standard first-offense DWI."
+  },
+  {
+    category: "DWI & Consequences",
+    miss: "MED",
+    q: "Refusing a breath/blood test at a Texas DWI stop results in:",
+    choices: [
+      "Automatic license suspension of 180 days for a first refusal",
+      "No penalty — you have the right to refuse",
+      "Only a fine, not a license consequence"
+    ],
+    correct: 0,
+    explain: "Refusing a chemical test = automatic 180-day license suspension for a first refusal, 2 years for repeat refusal. Officers can also obtain a warrant for a blood draw. Refusing doesn't prevent a DWI charge — other evidence still applies."
+  },
+
+  // UNDER 21 / ZERO TOLERANCE ───────────────────────
+  {
+    category: "Alcohol Laws",
+    miss: "HIGH",
+    q: "In Texas, a driver under 21 can be charged with DUI with a BAC of:",
+    choices: [
+      "0.02% or higher",
+      "0.08% — same limit as adults",
+      "Any detectable amount (0.01% or higher)"
+    ],
+    correct: 2,
+    explain: "Texas has zero-tolerance for drivers under 21. ANY detectable alcohol — 0.01% or more — can result in a DUI charge. Under-21 drivers do not get the 0.08% adult standard."
+  },
+
+  // OPEN CONTAINER ──────────────────────────────────
+  {
+    category: "Alcohol Laws",
+    miss: "HIGH",
+    q: "Texas open container law prohibits open alcoholic beverages:",
+    choices: [
+      "Only in the driver's immediate area",
+      "Anywhere in the passenger area of a vehicle on a public highway — including passengers in back",
+      "Only if the driver is also drinking"
+    ],
+    correct: 1,
+    explain: "Texas open container law prohibits open alcoholic beverages anywhere in the passenger area on a public highway — including the back seat. Exceptions: limos, party buses, and buses where passengers may legally drink."
+  },
+
+  // ROUNDABOUTS ─────────────────────────────────────
+  {
+    category: "Roundabouts",
+    miss: "HIGH",
+    q: "When entering a roundabout, you must yield to:",
+    choices: [
+      "Vehicles entering from your right",
+      "All vehicles — roundabouts always require a full stop",
+      "Vehicles already circulating INSIDE the roundabout"
+    ],
+    correct: 2,
+    explain: "Always yield to vehicles already in the roundabout. Enter when there's a safe gap, travel counterclockwise, stay in your lane, and signal when exiting. Never stop inside a roundabout unless avoiding a collision."
+  },
+
+  // HYDROPLANING ────────────────────────────────────
+  {
+    category: "Weather & Skids",
+    miss: "HIGH",
+    q: "Your vehicle starts to hydroplane on a wet road. You should:",
+    choices: [
+      "Apply the brakes firmly to slow quickly",
+      "Ease off the accelerator and hold the steering wheel straight",
+      "Turn the wheel into the skid immediately"
+    ],
+    correct: 1,
+    explain: "Hydroplaning = tires lose contact with road surface due to water. Ease off the gas — do NOT brake hard or turn sharply. Hold the wheel steady and let the car slow naturally until tires regain traction."
+  },
+
+  // TIRE BLOWOUT ────────────────────────────────────
+  {
+    category: "Vehicle Control",
+    miss: "HIGH",
+    q: "If a front tire blows out at highway speed, your FIRST action should be to:",
+    choices: [
+      "Brake hard to slow down quickly",
+      "Grip the wheel firmly and avoid sudden braking or steering",
+      "Immediately pull to the right shoulder"
+    ],
+    correct: 1,
+    explain: "A blowout causes a sudden pull to one side. Grip the wheel firmly, maintain direction, ease off the gas, and let the car decelerate naturally. Hard braking causes loss of control. Once slowed, steer safely to the shoulder."
+  },
+
+  // ABS BRAKING ─────────────────────────────────────
+  {
+    category: "Vehicle Control",
+    miss: "HIGH",
+    q: "If your vehicle has Anti-lock Brakes (ABS) and you need to make an emergency stop, you should:",
+    choices: [
+      "Pump the brakes in short rapid bursts",
+      "Apply firm, steady pressure and hold it — let ABS do the work",
+      "Apply pressure, release, then reapply every 2 seconds"
+    ],
+    correct: 1,
+    explain: "With ABS: press firmly and HOLD. Do not pump. ABS pumps automatically far faster than you can. You'll feel the pedal pulsate — that's normal. ABS lets you steer while braking, which is its main safety advantage."
+  },
+
+  // BLACK ICE ───────────────────────────────────────
+  {
+    category: "Weather & Skids",
+    miss: "HIGH",
+    q: "Black ice is most likely to form on:",
+    choices: [
+      "Sun-exposed flat roads in direct sunlight",
+      "Bridges, overpasses, and shaded spots — even when other roads appear clear",
+      "Only when temperatures fall below 20°F"
+    ],
+    correct: 1,
+    explain: "Black ice is a thin, nearly invisible ice layer that forms on bridges, overpasses, and shaded areas near or slightly below freezing — where the surface loses heat from both above and below. Always slow down when temps are near freezing."
+  },
+
+  // DRIVING IN FOG ──────────────────────────────────
+  {
+    category: "Weather & Skids",
+    miss: "MED",
+    q: "When driving in dense fog, you should use:",
+    choices: [
+      "High beams — more light is better",
+      "No headlights — they reflect back and make visibility worse",
+      "Low beams or fog lights"
+    ],
+    correct: 2,
+    explain: "Use low beams in fog. High beams reflect off fog particles back toward you, reducing visibility. Fog lights aim lower and are ideal when available. Also: slow down significantly and increase following distance."
+  },
+
+  // FOLLOWING DISTANCE IN BAD CONDITIONS ────────────
+  {
+    category: "Following Distance",
+    miss: "MED",
+    q: "In rain, fog, or heavy traffic, the recommended following distance should be:",
+    choices: [
+      "Still 3 seconds — the rule doesn't change",
+      "2 seconds — you're going slower so you need less room",
+      "4–6 seconds or more"
+    ],
+    correct: 2,
+    explain: "The 3-second rule is a minimum for ideal conditions. In rain, fog, heavy traffic, or when following large trucks, increase to 4–6 seconds. Stopping distance increases significantly on wet or icy roads."
+  },
+
+  // BICYCLE 3-FOOT LAW ──────────────────────────────
+  {
+    category: "Sharing the Road",
+    miss: "MED",
+    q: "When passing a bicyclist on the road, Texas law requires a minimum clearance of:",
+    choices: ["6 feet", "Same as any vehicle — one full lane", "3 feet"],
+    correct: 2,
+    explain: "Texas's 3-foot law requires at least 3 feet of clearance when passing a bicyclist. If you can't safely give 3 feet, wait until you can pass safely. Cyclists have the same rights and responsibilities as vehicle operators."
+  },
+
+  // BLIND PEDESTRIANS ───────────────────────────────
+  {
+    category: "Sharing the Road",
+    miss: "MED",
+    q: "A pedestrian using a white cane or guide dog is at the curb. You should:",
+    choices: [
+      "Yield only if they have started crossing",
+      "Honk to alert them you are there",
+      "Always stop and yield completely — they always have the right-of-way"
+    ],
+    correct: 2,
+    explain: "A white cane or guide dog signals a visually impaired pedestrian. You must always yield. Do NOT honk — it may startle or disorient them. Wait patiently until they have completely crossed."
+  },
+
+  // HORSES ON ROAD ──────────────────────────────────
+  {
+    category: "Sharing the Road",
+    miss: "MED",
+    q: "When approaching a horse and rider on the road, you should:",
+    choices: [
+      "Honk lightly to alert them you are approaching",
+      "Pass quickly to minimize time near the horse",
+      "Slow down, give wide clearance, and avoid sudden sounds"
+    ],
+    correct: 2,
+    explain: "Horses can be startled by vehicles, engine noise, or sudden movements — potentially throwing the rider. Slow down, give maximum space, avoid honking. If the rider signals you to stop, stop until they signal it's clear."
+  },
+
+  // FUNERAL PROCESSIONS ─────────────────────────────
+  {
+    category: "Special Situations",
+    miss: "HIGH",
+    q: "A funeral procession is moving through an intersection where your light is green. You should:",
+    choices: [
+      "Proceed — you have the green light",
+      "Honk to alert them they should stop",
+      "Stop and yield to the entire procession"
+    ],
+    correct: 2,
+    explain: "In Texas, funeral processions have the right-of-way through intersections. Vehicles in a properly identified procession may proceed through red lights together. You must yield the entire procession even if you have a green light."
+  },
+
+  // AGGRESSIVE DRIVING ──────────────────────────────
+  {
+    category: "Aggressive Driving",
+    miss: "MED",
+    q: "If an aggressive driver follows or confronts you, you should:",
+    choices: [
+      "Confront them so they understand you won't back down",
+      "Speed up to put distance between you",
+      "Avoid eye contact, don't respond, and drive to a police station or busy public place"
+    ],
+    correct: 2,
+    explain: "Never engage with an aggressive driver. Avoid eye contact, no gestures, no retaliation. Drive to a police station, fire station, or busy public place. Call 911 if threatened. Engagement always escalates the situation."
+  },
+
+  // PASSING ON THE RIGHT ────────────────────────────
+  {
+    category: "Passing",
+    miss: "MED",
+    q: "Passing on the RIGHT is legal in Texas when:",
+    choices: [
+      "The vehicle ahead is turning left and there is enough paved road to pass safely",
+      "You're in a hurry and the left lane is blocked",
+      "The driver ahead is going below the speed limit"
+    ],
+    correct: 0,
+    explain: "You may pass on the right when the vehicle ahead is making a left turn and there's sufficient paved road to do so safely, or on a one-way street or multi-lane highway. Never drive on the shoulder to pass."
+  },
+
+  // ILLEGAL PASSING ─────────────────────────────────
+  {
+    category: "Passing",
+    miss: "MED",
+    q: "It is ILLEGAL to pass another vehicle when:",
+    choices: [
+      "Approaching the crest of a hill or a curve where you can't see far enough ahead",
+      "The vehicle ahead is driving below the speed limit",
+      "There are 3 or more cars behind you"
+    ],
+    correct: 0,
+    explain: "Passing is illegal approaching the crest of a hill, a curve, or any spot where visibility is insufficient to pass safely. Also prohibited at intersections, railroad crossings, and where signs or solid yellow lines prohibit it."
+  },
+
+  // U-TURNS ─────────────────────────────────────────
+  {
+    category: "Turns",
+    miss: "MED",
+    q: "U-turns in a business district in Texas are:",
+    choices: [
+      "Always legal if you yield to traffic",
+      "Only legal at an intersection or at an opening provided for that purpose",
+      "Illegal under all circumstances in a business district"
+    ],
+    correct: 1,
+    explain: "U-turns in a business district are only legal at an intersection or at an approved opening. They're also prohibited where you can't be seen for 500 feet in both directions, at railroad crossings, and where signs prohibit them."
+  },
+
+  // LEFT TURN FROM CORRECT LANE ─────────────────────
+  {
+    category: "Turns",
+    miss: "MED",
+    q: "When turning LEFT at an intersection, you must turn from:",
+    choices: [
+      "Any lane as long as you yield to oncoming traffic",
+      "The rightmost available lane",
+      "The lane nearest to the center line (or the left turn lane if provided)"
+    ],
+    correct: 2,
+    explain: "Left turns must be made from the lane nearest the centerline, or from a designated left-turn lane. Complete the turn into the nearest left lane of the cross street. Turning from the wrong lane is a common crash cause."
+  },
+
+  // CARBON MONOXIDE ─────────────────────────────────
+  {
+    category: "Vehicle Safety",
+    miss: "MED",
+    q: "Carbon monoxide (CO) from a vehicle exhaust is particularly dangerous because:",
+    choices: [
+      "It has a strong, distinctive odor",
+      "It is colorless and odorless — undetectable without a sensor",
+      "It is flammable and could ignite the fuel system"
+    ],
+    correct: 1,
+    explain: "CO is colorless, odorless, and deadly. Never run a vehicle in a closed garage. If you feel dizzy, nauseous, or drowsy while driving with the heater on — especially in winter — get fresh air immediately. These are CO poisoning symptoms."
+  },
+
+  // LANE CHANGES ────────────────────────────────────
+  {
+    category: "Defensive Driving",
+    miss: "MED",
+    q: "The safe sequence for changing lanes on a highway is:",
+    choices: [
+      "Signal, check the mirror, then move",
+      "Check mirror, signal, check blind spot over your shoulder, then move if clear",
+      "Check mirror and move quickly — signaling first slows traffic"
+    ],
+    correct: 1,
+    explain: "Safe lane change: Check mirror → Signal → Check blind spot (look over your shoulder) → Move if clear. Never rely only on mirrors — blind spots aren't visible in them. Signal warns drivers before you move."
+  },
+
+  // SPACE CUSHION ───────────────────────────────────
+  {
+    category: "Defensive Driving",
+    miss: "MED",
+    q: "The purpose of maintaining a 'space cushion' around your vehicle is to:",
+    choices: [
+      "Save fuel by avoiding sudden acceleration and braking",
+      "Give yourself time and space to react to hazards",
+      "Allow other drivers to merge in front of you easily"
+    ],
+    correct: 1,
+    explain: "A space cushion on all sides gives you reaction time and escape routes. You need space ahead to brake, behind to avoid being pushed into a hazard, and to the sides to swerve. This is the core of defensive driving."
+  },
+
+  // MIRROR CHECK FREQUENCY ──────────────────────────
+  {
+    category: "Defensive Driving",
+    miss: "MED",
+    q: "How often should you glance in your rearview mirror while driving normally?",
+    choices: [
+      "Every 20–30 seconds",
+      "Only when planning to turn or stop",
+      "Every 5–8 seconds"
+    ],
+    correct: 2,
+    explain: "Check mirrors every 5–8 seconds to maintain a 360° awareness of traffic. This lets you spot approaching vehicles before emergency braking or lane changes. Always check mirrors before any maneuver."
+  },
+
+  // FREEWAY MERGING ─────────────────────────────────
+  {
+    category: "Freeway Driving",
+    miss: "MED",
+    q: "When entering a freeway using an acceleration ramp, you should:",
+    choices: [
+      "Stop at the end of the ramp and wait for a gap in traffic",
+      "Signal and merge immediately regardless of your speed",
+      "Accelerate to match freeway speed in the ramp and merge smoothly into a gap"
+    ],
+    correct: 2,
+    explain: "Use the acceleration ramp to reach freeway speed before merging. Check mirrors and blind spots, signal, and merge when there's a safe gap. Never stop at the end of a ramp — it creates a serious rear-end collision risk."
+  },
+
+  // NIGHT VISION ADJUSTMENT ─────────────────────────
+  {
+    category: "Headlights",
+    miss: "MED",
+    q: "After exposure to bright headlights, your eyes may take ________ to readjust to darkness.",
+    choices: ["About 2–3 seconds", "Less than 1 second", "Up to 7 seconds or more"],
+    correct: 2,
+    explain: "Eyes can take 7 seconds or more to readjust from bright light to darkness. This is why oncoming high beams are so hazardous at night, and why you should slow down when exiting a lit tunnel or brightly lit area."
+  },
+
+  // STOP SIGN — WHERE TO STOP ───────────────────────
+  {
+    category: "Road Signs",
+    miss: "MED",
+    q: "At a stop sign with NO marked stop line and NO crosswalk, you must stop:",
+    choices: [
+      "Behind the sign itself",
+      "At the point nearest the intersecting road where you can see oncoming traffic",
+      "10 feet before the sign"
+    ],
+    correct: 1,
+    explain: "Stop at the marked stop line if present. No line → stop at the crosswalk. No crosswalk → stop at the point nearest the intersecting road where you can see cross traffic clearly."
+  },
+
+  // CHILD SAFETY SEATS ──────────────────────────────
+  {
+    category: "Safety Equipment",
+    miss: "HIGH",
+    q: "Texas law requires children to be in an appropriate child safety seat until they are:",
+    choices: [
+      "5 years old or 57 inches tall",
+      "8 years old AND/OR 4 feet 9 inches (57 inches) tall",
+      "6 years old or 60 inches tall"
+    ],
+    correct: 1,
+    explain: "Texas requires a child safety seat for children under 8 years old AND under 4 feet 9 inches tall. Once either threshold is met, a regular seat belt may be used. The driver is responsible for all passengers under 15."
+  },
+
+  // BACKING SAFELY ──────────────────────────────────
+  {
+    category: "Vehicle Control",
+    miss: "MED",
+    q: "The safest way to back out of a driveway onto a two-way street is to:",
+    choices: [
+      "Back out quickly to minimize time in the roadway",
+      "Back into the nearest lane and then straighten",
+      "Check behind the vehicle on foot first if possible, then back out slowly"
+    ],
+    correct: 2,
+    explain: "Always check behind your vehicle before backing when possible. When backing, turn and look over your right shoulder, back slowly, and check both directions before entering the street."
+  },
+
+  // PEDESTRIANS AT UNMARKED CROSSWALKS ──────────────
+  {
+    category: "Right-of-Way",
+    miss: "MED",
+    q: "A pedestrian is crossing at an UNMARKED crosswalk at an intersection. You must:",
+    choices: [
+      "Proceed — vehicles have right-of-way at unmarked crosswalks",
+      "Yield to the pedestrian",
+      "Honk to warn them before proceeding"
+    ],
+    correct: 1,
+    explain: "An unmarked crosswalk legally exists at every intersection in Texas. Pedestrians crossing within an unmarked crosswalk have the right-of-way. Only at mid-block locations (not at intersections) do pedestrians yield to vehicles."
+  },
+
+  // EMERGENCY FLASHERS ──────────────────────────────
+  {
+    category: "Vehicle Control",
+    miss: "MED",
+    q: "You should turn on your hazard (emergency) flashers when:",
+    choices: [
+      "Driving slowly in rain or fog",
+      "Your vehicle has broken down or is stopped in a hazardous location",
+      "Double-parking briefly while running into a store"
+    ],
+    correct: 1,
+    explain: "Use hazard lights when your vehicle is disabled or poses a hazard. In Texas, using hazard lights while driving in rain or fog is discouraged — other drivers may not see your turn signals, and it may be illegal in some conditions."
+  }
+];
+
+// ── STATE ──────────────────────────────────────────────────────
+let currentQ = 0;
+let correct = 0;
+let wrong = 0;
+let answered = false;
+let categoryResults = {};
+
+// ── INIT ───────────────────────────────────────────────────────
+function initCategories() {
+  QUESTIONS.forEach(q => {
+    if (!categoryResults[q.category]) {
+      categoryResults[q.category] = { correct: 0, total: 0 };
+    }
+  });
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQ];
+  const total = QUESTIONS.length;
+  answered = false;
+
+  // Progress
+  const pct = Math.round((currentQ / total) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `Question ${currentQ + 1} of ${total}`;
+  document.getElementById('progress-pct').textContent = pct + '%';
+
+  // Meta
+  document.getElementById('q-num').textContent = `Question ${currentQ + 1}`;
+  const missBadge = document.getElementById('miss-badge');
+  if (q.miss === 'HIGH') {
+    missBadge.textContent = '🔴 HIGH MISS RATE';
+    missBadge.className = 'miss-badge miss-high';
+  } else {
+    missBadge.textContent = '🟡 COMMONLY MISSED';
+    missBadge.className = 'miss-badge miss-med';
+  }
+  document.getElementById('cat-tag').textContent = q.category;
+  document.getElementById('question-text').textContent = q.q;
+
+  // Choices
+  const letters = ['A', 'B', 'C', 'D'];
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  q.choices.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="letter">${letters[i]}</span><span>${choice}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    choicesEl.appendChild(btn);
+  });
+
+  // Hide explanation & next
+  const exp = document.getElementById('explanation');
+  exp.classList.remove('show');
+  document.getElementById('next-btn').classList.remove('show');
+
+  // Animate card
+  const card = document.getElementById('question-card');
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = 'slideIn 0.3s ease';
+}
+
+function selectAnswer(selectedIndex) {
+  if (answered) return;
+  answered = true;
+
+  const q = QUESTIONS[currentQ];
+  const buttons = document.querySelectorAll('.choice-btn');
+
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) {
+      btn.classList.add('correct-choice');
+    } else if (i === selectedIndex && selectedIndex !== q.correct) {
+      btn.classList.add('wrong-choice');
+    }
+  });
+
+  // Track
+  categoryResults[q.category].total++;
+  if (selectedIndex === q.correct) {
+    correct++;
+    categoryResults[q.category].correct++;
+  } else {
+    wrong++;
+  }
+
+  // Update scoreboard
+  const total = correct + wrong;
+  document.getElementById('score-correct').textContent = correct;
+  document.getElementById('score-wrong').textContent = wrong;
+  document.getElementById('score-pct').textContent = total > 0 ? Math.round((correct / total) * 100) + '%' : '0%';
+
+  // Show explanation
+  document.getElementById('exp-text').textContent = q.explain;
+  document.getElementById('explanation').classList.add('show');
+
+  // Show next
+  const nextBtn = document.getElementById('next-btn');
+  if (currentQ < QUESTIONS.length - 1) {
+    nextBtn.textContent = 'Next Question →';
+  } else {
+    nextBtn.textContent = 'See My Results 🎯';
+  }
+  nextBtn.classList.add('show');
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= QUESTIONS.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz-area').style.display = 'none';
+  const results = document.getElementById('results-screen');
+  results.classList.add('show');
+
+  const total = QUESTIONS.length;
+  const pct = Math.round((correct / total) * 100);
+  const passed = pct >= 70;
+
+  // Hero
+  document.getElementById('result-emoji').textContent = pct >= 85 ? '🌟' : pct >= 70 ? '✅' : '📚';
+  document.getElementById('final-score').textContent = pct + '%';
+  document.getElementById('final-label').textContent = `${correct} of ${total} correct`;
+  const badge = document.getElementById('pass-fail-badge');
+  badge.textContent = passed ? '✓ Passing Score' : '✗ Keep Studying';
+  badge.className = 'pass-fail ' + (passed ? 'pass' : 'fail');
+
+  // Progress bar to 100%
+  document.getElementById('progress-bar').style.width = '100%';
+  document.getElementById('progress-text').textContent = `Completed ${total} of ${total}`;
+  document.getElementById('progress-pct').textContent = '100%';
+
+  // Category breakdown
+  const catRows = document.getElementById('cat-rows');
+  catRows.innerHTML = '';
+  const sortedCats = Object.entries(categoryResults)
+    .filter(([, v]) => v.total > 0)
+    .sort(([, a], [, b]) => (a.correct / a.total) - (b.correct / b.total));
+
+  sortedCats.forEach(([cat, data]) => {
+    const catPct = Math.round((data.correct / data.total) * 100);
+    const fillClass = catPct >= 80 ? 'high' : catPct >= 50 ? '' : 'low';
+    catRows.innerHTML += `
+      <div class="cat-row">
+        <div class="cat-row-header">
+          <span class="cat-name">${cat}</span>
+          <span class="cat-score">${data.correct}/${data.total} (${catPct}%)</span>
+        </div>
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill ${fillClass}" style="width: ${catPct}%"></div>
+        </div>
+      </div>`;
+  });
+}
+
+function restartQuiz() {
+  currentQ = 0;
+  correct = 0;
+  wrong = 0;
+  answered = false;
+  initCategories();
+  Object.keys(categoryResults).forEach(k => {
+    categoryResults[k] = { correct: 0, total: 0 };
+  });
+  document.getElementById('score-correct').textContent = '0';
+  document.getElementById('score-wrong').textContent = '0';
+  document.getElementById('score-pct').textContent = '0%';
+  document.getElementById('quiz-area').style.display = '';
+  document.getElementById('results-screen').classList.remove('show');
+  renderQuestion();
+}
+
+// ── START ──────────────────────────────────────────────────────
+initCategories();
+renderQuestion();
+</script>
+
+  <!-- ── PWA INSTALL BANNER ── -->
+  <div id="install-banner">
+    <span class="ib-icon">⭐</span>
+    <div class="ib-text">
+      <div class="ib-title">Add to Home Screen</div>
+      <div class="ib-sub">Install for offline use — no app store needed</div>
+    </div>
+    <button class="ib-btn" id="install-btn">Install</button>
+    <button class="ib-close" id="install-dismiss">✕</button>
+  </div>
+
+  <script>
+  // ── SERVICE WORKER ─────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('[PWA] Service worker registered:', reg.scope))
+        .catch(err => console.warn('[PWA] SW registration failed:', err));
+    });
+  }
+
+  // ── INSTALL PROMPT ─────────────────────────────────
+  let deferredPrompt = null;
+  const banner = document.getElementById('install-banner');
+  const installBtn = document.getElementById('install-btn');
+  const dismissBtn = document.getElementById('install-dismiss');
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show banner after 3 seconds
+    setTimeout(() => {
+      if (deferredPrompt) banner.classList.add('show');
+    }, 3000);
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PWA] Install outcome:', outcome);
+    deferredPrompt = null;
+    banner.classList.remove('show');
+  });
+
+  dismissBtn.addEventListener('click', () => {
+    banner.classList.remove('show');
+    deferredPrompt = null;
+  });
+
+  // Hide banner if already installed
+  window.addEventListener('appinstalled', () => {
+    banner.classList.remove('show');
+    deferredPrompt = null;
+    console.log('[PWA] App installed successfully');
+  });
+  </script>
+
+</body>
+</html>
